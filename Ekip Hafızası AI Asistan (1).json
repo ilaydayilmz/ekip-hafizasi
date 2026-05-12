@@ -1,0 +1,907 @@
+{
+  "name": "Ekip Hafızası AI Asistan",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            },
+            {}
+          ]
+        }
+      },
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -4416,
+        -192
+      ],
+      "id": "3f5927c6-82f6-4dbb-a459-66adf35a608f",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 20,
+        "filters": {
+          "labelIds": [],
+          "readStatus": "unread"
+        }
+      },
+      "name": "Get Unread Emails",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -4192,
+        -192
+      ],
+      "id": "dfd75529-72c7-439d-a2df-38ea55894485",
+      "typeVersion": 2.2,
+      "webhookId": "5a674f20-7a16-4517-b4c2-c4f059c3de3f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lTw7Ds9QpwJa0mRX",
+          "name": "Gmail account 2"
+        }
+      },
+      "notes": "SETUP: Change labelIds to match your Gmail label ID. To find it: open Gmail, click your label, the URL shows the ID."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Process One by One",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        -3936,
+        -192
+      ],
+      "id": "f20bda99-21f7-4cec-8665-bacc271708e5",
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst subject = item.subject || item.Subject || '';\nconst sender = item.from || item.From || item.sender || '';\nconst combined = (subject + sender).toLowerCase();\nlet hash = 0;\nfor (let i = 0; i < combined.length; i++) {\n  const char = combined.charCodeAt(i);\n  hash = ((hash << 5) - hash) + char;\n  hash = hash & hash;\n}\nconst emailHash = Math.abs(hash).toString(16);\nconst rawBody = item.text || item.snippet || item.body || item.Body || '';\nreturn [{\n  json: {\n    ...item,\n    emailHash: emailHash,\n    bodyShort: rawBody.substring(0, 800)\n  }\n}];"
+      },
+      "name": "Generate Email Hash",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -3712,
+        -192
+      ],
+      "id": "471812f5-b5a0-441c-9ed7-9cad1c4dec90",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q",
+          "mode": "list",
+          "cachedResultName": "Başlıksız e-tablo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Görevler",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit#gid=0"
+        },
+        "options": {}
+      },
+      "name": "Check for Duplicate",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -3488,
+        -192
+      ],
+      "id": "7bb42340-2c4e-4d34-b66a-9b5587d0f264",
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aRTQT9CeuQsymCT5",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "notes": "SETUP: Replace YOUR_GOOGLE_SHEET_ID_HERE with your sheet ID (found in the Google Sheets URL)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json['Title'] }}",
+              "operation": "isEmpty"
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "name": "Is Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -3280,
+        -192
+      ],
+      "id": "8bbf0bed-e406-4b5d-b9f0-2ed436cd42b2",
+      "typeVersion": 2.3,
+      "notes": "TRUE (empty = not found = new email) → continue. FALSE (found = duplicate) → stop."
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q",
+          "mode": "list",
+          "cachedResultName": "Başlıksız e-tablo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Görevler",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit#gid=0"
+        },
+        "options": {}
+      },
+      "name": "Get User Profile",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -3056,
+        -192
+      ],
+      "id": "6b6070e3-4c6b-4bde-b5bc-b9f41cb5579f",
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aRTQT9CeuQsymCT5",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const profileRows = $input.all();\n\nconst profile = {};\n\nprofileRows.forEach(row => {\n  profile[row.json.Field] = row.json.Value;\n});\n\n// Email verisini de al (ilk item'dan)\nconst emailData = profileRows[0]?.json || {};\n\nreturn [{ json: { userProfile: profile, ...emailData } }];"
+      },
+      "name": "Build Profile Context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -2832,
+        -192
+      ],
+      "id": "a23c7287-c71f-4001-b190-19c13a47d828",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyALm4NZt_NSb4lzRhERQ94p157EPI0Sg4I"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"={{ 'RESPOND WITH RAW JSON ONLY. Analyze this message and return JSON with fields: gorev_var, gorev_adi, kisi, deadline, durum, oncelik, kaynak, onemli, kategori. Message: ' + $('Process One by One').item.json.snippet }}\"\n    }]\n  }],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\",\n    \"maxOutputTokens\": 1000\n  }\n}",
+        "options": {}
+      },
+      "name": "Call Gemini AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -2416,
+        -192
+      ],
+      "id": "cfc9606d-3ca8-44e7-aa78-6cad5ed8cba8",
+      "typeVersion": 4.4,
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "maxTries": 5,
+      "notes": "SETUP: Replace YOUR_GEMINI_API_KEY_HERE with your key from Google AI Studio."
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst parsedItems = items.map((item) => {\n  let text = item?.json?.candidates[0]?.content?.parts[0]?.text || '';\n  \n  text = text.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  \n  // JSON bulmaya çalış\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    try {\n      const parsed = JSON.parse(jsonMatch[0]);\n      return { json: parsed };\n    } catch(e) {\n      return { json: { classification: 'irrelevant', err: e.message, raw: text } };\n    }\n  }\n  return { json: { classification: 'irrelevant', raw: text } };\n});\nreturn parsedItems;"
+      },
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -2192,
+        -192
+      ],
+      "id": "dc71bf6e-8cea-4edc-94d5-26d031854d6a",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "31992a22-1071-4ec3-8167-7c1dc1569d58",
+              "leftValue": "={{ $json.classification }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "021f616f-460b-47d3-a2ef-b9355ee4c1cc",
+              "leftValue": "={{ $json.classification }}",
+              "rightValue": "irrelevant",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Is Relevant?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1968,
+        -192
+      ],
+      "id": "b718fd1e-e111-4b8b-8579-4208e7c0e279",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Görevler",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Görev": "={{ $json.gorev_adi }}",
+            "Kişi ": "={{ $json.kisi }}",
+            "Durum": "={{ ' ' + ($json.durum === 'Planlandı' ? 'Planlandı' : $json.durum === 'Devam ediyor' ? 'Devam ediyor' : 'Bekliyor') }}",
+            "Tarih": "={{ $now.toFormat('dd.MM.yyyy') }}",
+            "Öncelik": "={{ $json.oncelik }}",
+            "ID": "={{ $('Get User Profile').item.json.row_number }}",
+            "Deadline": "={{ $json.deadline }}",
+            "Kaynak": "={{ ' ' + ($json.kaynak || 'Gmail') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Görev",
+              "displayName": "Görev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Kişi ",
+              "displayName": "Kişi ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Deadline",
+              "displayName": "Deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Durum",
+              "displayName": "Durum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Öncelik",
+              "displayName": "Öncelik",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Kaynak",
+              "displayName": "Kaynak",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tarih",
+              "displayName": "Tarih",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Save to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -1744,
+        -192
+      ],
+      "id": "67b25979-d93b-4fc1-90ed-f5be5aca5ae3",
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aRTQT9CeuQsymCT5",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0bcf17e2-7675-43b0-9ce4-f64700867ae8",
+              "leftValue": "={{ $('Parse AI Response').first().json.deadline }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Has Deadline?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1520,
+        -192
+      ],
+      "id": "b005267a-a1ae-4c2c-8132-8b142a32e4aa",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "yapayzekahackathon26@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ $json.Tarih}}",
+        "end": "={{ $json.Tarih}}",
+        "additionalFields": {
+          "allday": "yes",
+          "color": "11",
+          "description": "=Kişi: {{ $json['Kişi '] }} | Öncelik: {{ $json.Öncelik }} | Durum: {{ $json.Durum }} | Kaynak: {{ $json.Kaynak }}\nAdded automatically by Opportunity Tracker. ",
+          "summary": "={{ $json.Görev }}"
+        }
+      },
+      "name": "Add to Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        -1296,
+        -384
+      ],
+      "id": "e73613ba-4401-408d-91b1-f179d0ce0b3b",
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ACkb7FdrPiZGzrnh",
+          "name": "Google Calendar OAuth2 API"
+        }
+      },
+      "notes": "SETUP: Replace YOUR_GOOGLE_CALENDAR_ID_HERE with your calendar ID (found in Google Calendar settings → Integrate Calendar)."
+    },
+    {
+      "parameters": {
+        "chatId": "8590765507",
+        "text": "=✅ Yeni görev eklendi!\n📌 Görev: {{ $json.Görev }}\n👤 Kişi: {{ $json['Kişi '] }}\n⚡ Öncelik: {{ $json.Öncelik }}\n📊 Durum: {{ $json.Durum }}\n🗓 Deadline: {{ $json.Deadline ?? 'Belirtilmedi' }}\n🔗 Kaynak: {{ $json.Kaynak }}\n\nOnaylıyor musun? ✅ /evet ❌ /hayir",
+        "additionalFields": {}
+      },
+      "name": "Telegram Notification",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -1296,
+        -192
+      ],
+      "id": "74940508-4f81-402d-8179-e48c58def420",
+      "typeVersion": 1.2,
+      "webhookId": "c94f9fe1-7b88-4d4a-afd1-54a2ea078453",
+      "credentials": {
+        "telegramApi": {
+          "id": "t72ZhZpMQWmBOC1F",
+          "name": "Telegram account"
+        }
+      },
+      "notes": "SETUP: 1) Create a bot via @BotFather on Telegram. 2) Add the bot token as a Telegram credential in n8n. 3) Replace YOUR_TELEGRAM_CHAT_ID_HERE with your chat ID."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit?usp=sharing",
+          "__regex": "https:\\/\\/(?:drive|docs)\\.google\\.com(?:\\/.*|)\\/d\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Görevler",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Parse AI Response').first().json['ID'] }}",
+            "Görev": "={{ $('Parse AI Response').first().json['Görev'] }}",
+            "Kişi ": "={{ $('Parse AI Response').first().json['Kişi'] }}",
+            "Deadline": "={{ $('Parse AI Response').first().json['Deadline'] }}",
+            "Durum": "={{ $('Parse AI Response').first().json['Durum'] }}",
+            "Öncelik": "={{ $('Parse AI Response').first().json['Öncelik'] }}",
+            "Kaynak": "={{ $('Parse AI Response').first().json['Kaynak'] }}",
+            "Tarih": "={{ $('Parse AI Response').first().json['Tarih'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Görev",
+              "displayName": "Görev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Kişi ",
+              "displayName": "Kişi ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Deadline",
+              "displayName": "Deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Durum",
+              "displayName": "Durum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Öncelik",
+              "displayName": "Öncelik",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Kaynak",
+              "displayName": "Kaynak",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tarih",
+              "displayName": "Tarih",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Add to Digest Queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -1296,
+        0
+      ],
+      "id": "18b342a4-76be-4312-98b4-b096e19c2c8e",
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aRTQT9CeuQsymCT5",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Generate Email Hash').first().json.id }}"
+      },
+      "name": "Mark Email as Read",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -1072,
+        -192
+      ],
+      "id": "fc182632-eab3-4b38-a1c3-195c3cd3814a",
+      "typeVersion": 2.2,
+      "webhookId": "51b20070-d3fe-43f4-9117-fc20fd51a832",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UoKghQgGreERQjsD",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c4339a3d-55b5-42e4-87c1-f08a76661ff3",
+              "name": "prompt",
+              "value": "=\"RESPOND WITH RAW JSON ONLY. NO EXPLANATIONS. NO MARKDOWN.\\nSen bir ekip yönetimi asistanısın.\\nCevabi SADECE JSON formatinda ver:\\n{\\\"gorev_var\\\": true, \\\"gorev_adi\\\": \\\"...\\\", \\\"kisi\\\": \\\"...\\\", \\\"deadline\\\": \\\"...\\\", \\\"durum\\\": \\\"Bekliyor\\\", \\\"oncelik\\\": \\\"Yuksek/Orta/Dusuk\\\", \\\"kaynak\\\": \\\"Telegram/Gmail\\\", \\\"onemli\\\": true, \\\"kategori\\\": \\\"gorev\\\"}\\nMesaj: \" + $('Process One by One').item.json.snippet",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2640,
+        -192
+      ],
+      "id": "6eccdbba-0da8-4878-b364-70be06c3de7d",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {
+    "Every 15 Minutes": [
+      {
+        "json": {
+          "timestamp": "2026-04-23T12:56:47.022+03:00",
+          "Readable date": "April 23rd 2026, 12:56:47 pm",
+          "Readable time": "12:56:47 pm",
+          "Day of week": "Thursday",
+          "Year": "2026",
+          "Month": "April",
+          "Day of month": "23",
+          "Hour": "12",
+          "Minute": "56",
+          "Second": "47",
+          "Timezone": "Europe/Istanbul (UTC+03:00)"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Get Unread Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Unread Emails": {
+      "main": [
+        [
+          {
+            "node": "Process One by One",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process One by One": {
+      "main": [
+        [
+          {
+            "node": "Generate Email Hash",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Email Hash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Email Hash": {
+      "main": [
+        [
+          {
+            "node": "Check for Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Get User Profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get User Profile": {
+      "main": [
+        [
+          {
+            "node": "Build Profile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Profile Context": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Gemini AI": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Is Relevant?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Relevant?": {
+      "main": [
+        [
+          {
+            "node": "Save to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Has Deadline?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Deadline?": {
+      "main": [
+        [
+          {
+            "node": "Add to Calendar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Add to Digest Queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Add to Digest Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Notification": {
+      "main": [
+        [
+          {
+            "node": "Mark Email as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Call Gemini AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fd7ddb79-6c03-426f-9e0e-f41db4112a74",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7aae2b55c5ab9e74ad72f1bb95f17c921714db225674373b8a63eb658e945f04"
+  },
+  "id": "sZGlbFgWE9se1JrB",
+  "tags": []
+}
