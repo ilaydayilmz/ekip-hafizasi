@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ekip Hafızası — AI Asistan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #13111e;
+      --bg2: #1a1728;
+      --bg3: #211e32;
+      --bg4: #2a263d;
+      --sidebar: #16132a;
+      --text: #f0eeff;
+      --text2: #9b95bb;
+      --text3: #5a5478;
+      --purple: #7c5cfc;
+      --purple2: #9b7ffe;
+      --purple-bg: rgba(124,92,252,0.15);
+      --green: #22c55e;
+      --green-bg: rgba(34,197,94,0.12);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245,158,11,0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239,68,68,0.12);
+      --blue: #3b82f6;
+      --blue-bg: rgba(59,130,246,0.12);
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px;
+      min-height: 100vh;
+      background: var(--sidebar);
+      border-right: 0.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 50;
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 22px 20px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .brand-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c5cfc, #a78bfa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .brand-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .sidebar-section {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text3);
+      padding: 20px 20px 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      font-size: 13px;
+      color: var(--text2);
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: var(--bg3); color: var(--text); }
+    .nav-item.active {
+      background: var(--purple-bg);
+      color: var(--purple2);
+      font-weight: 500;
+    }
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--purple);
+      border-radius: 0 2px 2px 0;
+    }
+    .nav-item i { font-size: 17px; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 100px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .sidebar-members {
+      margin-top: auto;
+      border-top: 0.5px solid var(--border);
+      padding: 14px 20px;
+    }
+    .member-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 10px;
+    }
+    .member {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .av-al { background: linear-gradient(135deg, #7c5cfc, #a78bfa); color: #fff; }
+    .av-zy { background: linear-gradient(135deg, #06b6d4, #3b82f6); color: #fff; }
+    .member-name { font-size: 13px; color: var(--text2); }
+
+    /* MAIN */
+    .main {
+      margin-left: 260px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .topbar-left h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 3px;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn-outline {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 500;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border2);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+    .btn-outline:hover { background: var(--bg3); }
+    .btn-primary {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600;
+      padding: 8px 18px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--purple);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+    .btn-primary:hover { background: #6b4de6; transform: translateY(-1px); }
+
+    /* CONTENT */
+    .content { padding: 24px 32px; flex: 1; }
+
+    /* BRIFING CARD */
+    .brifing {
+      background: linear-gradient(135deg, #1e1a35 0%, #211a38 100%);
+      border: 0.5px solid rgba(124,92,252,0.25);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .brifing-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .brifing-title { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+    .brifing-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+    .brifing-text strong { color: var(--purple2); font-weight: 600; }
+    .brifing-text .warn { color: var(--amber); font-weight: 600; }
+    .brifing-text .ok { color: var(--green); font-weight: 600; }
+
+    /* STAT CARDS */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      position: relative;
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+    .stat-dot {
+      position: absolute;
+      top: 20px; right: 20px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .stat-num {
+      font-size: 36px;
+      font-weight: 300;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-sub { font-size: 12px; color: var(--text3); }
+
+    /* TABS */
+    .tabs-bar {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 20px;
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+      width: fit-content;
+    }
+    .tab {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 18px;
+      border-radius: 7px;
+      cursor: pointer;
+      color: var(--text2);
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+    }
+    .tab.active { background: var(--purple); color: #fff; }
+    .tab:hover:not(.active) { color: var(--text); background: var(--bg3); }
+
+    /* TABLE SECTION */
+    .section-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .section-title { font-size: 15px; font-weight: 600; }
+    .section-filters { display: flex; gap: 8px; }
+    .filter-select {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 7px;
+      border: 0.5px solid var(--border2);
+      background: var(--bg3);
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+      appearance: none;
+      padding-right: 24px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a5478'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+
+    /* GÖREV TABLE */
+    .task-table { width: 100%; border-collapse: collapse; }
+    .task-table th {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text3);
+      padding: 10px 22px;
+      text-align: left;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .task-table td { padding: 14px 22px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+    .task-table tr:last-child td { border-bottom: none; }
+    .task-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .task-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+    .task-source { font-size: 11px; color: var(--text3); }
+    .deadline-red { font-family: 'Courier New', monospace; font-size: 12px; color: var(--red); font-weight: 600; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 100px;
+    }
+    .badge-blue { background: var(--blue-bg); color: #60a5fa; }
+    .badge-amber { background: var(--amber-bg); color: #fbbf24; }
+    .badge-green { background: var(--green-bg); color: #4ade80; }
+    .badge-red { background: var(--red-bg); color: #f87171; }
+    .badge-purple { background: var(--purple-bg); color: var(--purple2); }
+    .source-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 0.5px solid var(--border2);
+      color: var(--text2);
+      background: var(--bg3);
+    }
+    .source-chip i { font-size: 13px; }
+    .check-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 0.5px solid var(--border2);
+      background: transparent;
+      color: var(--text3);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      font-size: 14px;
+    }
+    .check-btn:hover { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+
+    /* EMBED SECTION */
+    .embed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .embed-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .embed-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .embed-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 600;
+    }
+    .embed-ico {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .ico-cal { background: rgba(66,133,244,0.15); color: #4285f4; }
+    .ico-sheet { background: rgba(52,168,83,0.15); color: #34a853; }
+    .live-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 500;
+      color: var(--green);
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .embed-body {
+      height: 440px;
+      background: var(--bg3);
+      position: relative;
+    }
+    .embed-body iframe { width: 100%; height: 100%; border: none; display: block; }
+    .embed-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; color: var(--text3);
+    }
+    .embed-placeholder i { font-size: 36px; opacity: 0.5; }
+    .embed-placeholder p { font-size: 13px; text-align: center; line-height: 1.5; max-width: 200px; color: var(--text3); }
+    .embed-placeholder code {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      background: var(--bg4);
+      padding: 5px 12px;
+      border-radius: 6px;
+      color: var(--purple2);
+      border: 0.5px solid var(--border2);
+    }
+
+    /* AI CHAT */
+    .ai-msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .ai-msg-bot {
+      background: var(--bg3);
+      border: 0.5px solid var(--border);
+      color: var(--text);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .ai-msg-user {
+      background: var(--purple);
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .ai-msg-thinking {
+      background: var(--bg3);
+      border: 0.5px solid var(--border);
+      color: var(--text3);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      font-style: italic;
+    }
+    .ai-quick-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      border: 0.5px solid var(--border2);
+      background: var(--bg3);
+      color: var(--text2);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      text-align: left;
+    }
+    .ai-quick-btn:hover {
+      background: var(--purple-bg);
+      color: var(--purple2);
+      border-color: var(--purple);
+    }
+    .ai-quick-btn i { font-size: 15px; }
+
+    /* TOGGLE SWITCH */
+    .toggle-switch { position:relative; display:inline-block; width:40px; height:22px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; cursor:pointer; inset:0; background:var(--bg4); border-radius:22px; transition:0.2s; border:0.5px solid var(--border2); }
+    .toggle-slider:before { position:absolute; content:''; height:16px; width:16px; left:3px; bottom:2px; background:#fff; border-radius:50%; transition:0.2s; }
+    input:checked + .toggle-slider { background:var(--purple); border-color:var(--purple); }
+    input:checked + .toggle-slider:before { transform:translateX(17px); }
+
+    /* PAGE TABS */
+    .page { display: none; }
+    .page.active { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🧠</div>
+    <div>
+      <div class="brand-name">Ekip Hafızası</div>
+      <div class="brand-sub">AI Asistan</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Ana Menü</div>
+  <a class="nav-item active" onclick="showPage('dashboard')">
+    <i class="ti ti-layout-dashboard"></i> Dashboard
+  </a>
+  <a class="nav-item" onclick="showPage('gorevler')">
+    <i class="ti ti-checklist"></i> Görevler
+    <span class="nav-badge">3</span>
+  </a>
+  <a class="nav-item" onclick="showPage('takvim')">
+    <i class="ti ti-calendar"></i> Takvim
+  </a>
+  <a class="nav-item" onclick="showPage('tablolar')">
+    <i class="ti ti-table"></i> Tablolar
+  </a>
+  <a class="nav-item" onclick="showPage('ekip')">
+    <i class="ti ti-users"></i> Ekip
+  </a>
+  <a class="nav-item" onclick="showPage('yapay-zeka')">
+    <i class="ti ti-sparkles"></i> Yapay Zeka
+  </a>
+
+  <div class="sidebar-section">Sistem</div>
+  <a class="nav-item" onclick="showPage('gmail')">
+    <i class="ti ti-mail"></i> Gmail Tarama
+  </a>
+  <a class="nav-item" onclick="showPage('ayarlar')">
+    <i class="ti ti-settings"></i> Ayarlar
+  </a>
+
+  <div class="sidebar-members">
+    <div class="member-label">Ekip Üyeleri</div>
+    <div class="member">
+      <div class="avatar av-al">AL</div>
+      <div class="member-name">Ali</div>
+    </div>
+    <div class="member">
+      <div class="avatar av-zy">ZY</div>
+      <div class="member-name">Zeynep</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="page-title">Dashboard</h1>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        Sistem aktif — n8n bağlı — veriler güncelleniyor
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-outline"><i class="ti ti-refresh" style="font-size:15px"></i> Yenile</button>
+      <button class="btn-primary"><i class="ti ti-plus" style="font-size:15px"></i> Yeni Görev</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="brifing">
+        <div class="brifing-icon">🌅</div>
+        <div>
+          <div class="brifing-title" id="brifing-title">Günlük Brifing — yükleniyor…</div>
+          <div class="brifing-text" id="brifing-text">Veriler yükleniyor…</div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Toplam Görev</div>
+          <div class="stat-dot" style="background: var(--purple)"></div>
+          <div class="stat-num" style="color: var(--purple2)" id="stat-toplam">3</div>
+          <div class="stat-sub">Tüm zamanlar</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tamamlanan</div>
+          <div class="stat-dot" style="background: var(--green)"></div>
+          <div class="stat-num" style="color: var(--green)" id="stat-tamamlanan">0</div>
+          <div class="stat-sub" id="stat-tamamlanan-sub">%0 tamamlanma</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bekleyen</div>
+          <div class="stat-dot" style="background: var(--amber)"></div>
+          <div class="stat-num" style="color: var(--amber)" id="stat-bekleyen">3</div>
+          <div class="stat-sub">2 tanesi acil</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Geciken</div>
+          <div class="stat-dot" style="background: var(--red)"></div>
+          <div class="stat-num" style="color: var(--red)" id="stat-geciken">3</div>
+          <div class="stat-sub">Aksiyon gerekli</div>
+        </div>
+      </div>
+
+      <div class="section-card" style="margin-bottom:20px;">
+        <div class="section-header">
+          <div class="section-title">Aktif Görevler</div>
+          <div class="section-filters">
+            <select class="filter-select" id="dash-filter-durum" onchange="dashFiltrele()"><option value="">Tüm Durumlar</option><option value="planlandı">Planlandı</option><option value="devam ediyor">Devam ediyor</option><option value="bekliyor">Bekliyor</option></select>
+            <select class="filter-select" id="dash-filter-oncelik" onchange="dashFiltrele()"><option value="">Tüm Öncelikler</option><option value="yüksek">Yüksek</option><option value="orta">Orta</option><option value="düşük">Düşük</option></select>
+            <select class="filter-select" id="dash-filter-kisi" onchange="dashFiltrele()"><option value="">Tüm Üyeler</option><option value="A">Ali</option><option value="Z">Zeynep</option><option value="M">Mehmet</option></select>
+          </div>
+        </div>
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>Görev</th>
+              <th>Sorumlu</th>
+              <th>Deadline</th>
+              <th>Durum</th>
+              <th>Öncelik</th>
+              <th>Kaynak</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-task-tbody">
+            <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);"><i class="ti ti-loader" style="font-size:22px;display:block;margin:0 auto 8px;"></i>Yükleniyor…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- HATİRLATMA MAİLİ PANELİ -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">📧 Hatırlatma Maili Gönder</div>
+          <span class="badge badge-purple" style="font-size:11px;">n8n ile otomatik</span>
+        </div>
+        <div style="padding:20px 22px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">ALICI</label>
+              <select id="mail-alici" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;appearance:none;">
+                <option>Ali — ali@ekip.com</option>
+                <option>Zeynep — zeynep@ekip.com</option>
+                <option>Mehmet — mehmet@ekip.com</option>
+                <option>Tüm Ekip</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">KONU</label>
+              <select id="mail-konu" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;appearance:none;">
+                <option>Geciken Görev Hatırlatması</option>
+                <option>Deadline Yaklaşıyor</option>
+                <option>Haftalık Özet</option>
+                <option>Acil Görev Bildirimi</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">MESAJ</label>
+            <textarea id="mail-mesaj" rows="3" placeholder="Mail içeriğini buraya yazın…" style="width:100%;font-size:13px;padding:10px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;resize:vertical;outline:none;line-height:1.6;">Merhaba, geciken görevleriniz için hatırlatma — lütfen dashboard'u kontrol edin.</textarea>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button onclick="mailGonder()" style="display:flex;align-items:center;gap:7px;padding:9px 20px;background:var(--purple);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+              <i class="ti ti-send" style="font-size:15px;"></i> Mail Gönder
+            </button>
+            <button onclick="mailZamanla()" style="display:flex;align-items:center;gap:7px;padding:9px 20px;background:transparent;color:var(--text2);border:0.5px solid var(--border2);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;">
+              <i class="ti ti-clock" style="font-size:15px;"></i> Zamanla
+            </button>
+            <span id="mail-status" style="font-size:12px;color:var(--green);display:none;"><i class="ti ti-circle-check"></i> Gönderildi!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAKVİM PAGE -->
+    <div class="page" id="page-takvim">
+      <div class="embed-card" style="margin-bottom:20px">
+        <div class="embed-header">
+          <div class="embed-title">
+            <div class="embed-ico ico-cal"><i class="ti ti-calendar"></i></div>
+            Google Calendar — n8n ile senkronize
+          </div>
+          <div class="live-badge"><div class="live-dot"></div> canlı</div>
+        </div>
+        <div class="embed-body" style="height:600px">
+          <iframe id="calendar-iframe" src=""
+            style="border:0; border-radius:0;" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLOLAR PAGE -->
+    <div class="page" id="page-tablolar">
+      <div class="section-card" style="margin-bottom:20px">
+        <div class="section-header">
+          <div class="embed-title">
+            <div class="embed-ico ico-sheet"><i class="ti ti-table"></i></div>
+            Google Sheets — n8n ile senkronize
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span id="sheets-son-guncelleme" style="font-size:11px;color:var(--text3);"></span>
+            <div class="live-badge"><div class="live-dot"></div> canlı</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="task-table" id="sheets-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Görev</th>
+                <th>Kişi</th>
+                <th>Deadline</th>
+                <th>Durum</th>
+                <th>Öncelik</th>
+                <th>Kaynak</th>
+                <th>Tarih</th>
+              </tr>
+            </thead>
+            <tbody id="sheets-tbody">
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3);"><i class="ti ti-loader" style="font-size:24px;display:block;margin:0 auto 10px;"></i>Veriler yükleniyor…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- YAPAY ZEKA PAGE -->
+    <div class="page" id="page-yapay-zeka">
+      <div style="display:grid; grid-template-columns:1fr 320px; gap:16px; align-items:start;">
+
+        <!-- CHAT ALANI -->
+        <div class="section-card" style="display:flex; flex-direction:column; height:580px;">
+          <div class="section-header" style="flex-shrink:0;">
+            <div class="section-title">🤖 AI Asistan — Gemini</div>
+            <span class="badge badge-blue" style="font-size:11px;">gemini-2.5-flash</span>
+          </div>
+          <div id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:16px 22px; display:flex; flex-direction:column; gap:12px;">
+            <div class="ai-msg ai-msg-bot">
+              Merhaba! Ekip görevlerinizi analiz edebilir, sorularınızı yanıtlayabilirim. Ne yapmamı istersiniz?
+            </div>
+          </div>
+          <div style="padding:14px 16px; border-top:0.5px solid var(--border); display:flex; gap:10px; flex-shrink:0;">
+            <input id="ai-chat-input" type="text" placeholder="Bir şey sor veya analiz isteği yaz…"
+              style="flex:1; background:var(--bg3); border:0.5px solid var(--border2); border-radius:8px; padding:10px 14px; color:var(--text); font-family:inherit; font-size:13px; outline:none;"
+              onkeydown="if(event.key==='Enter')aiChatGonder()" />
+            <button onclick="aiChatGonder()" class="btn-primary" style="padding:9px 18px;">
+              <i class="ti ti-send" style="font-size:15px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- SAĞ PANEL -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title">⚡ Hızlı Analizler</div>
+            </div>
+            <div style="padding:14px 16px; display:flex; flex-direction:column; gap:8px;">
+              <button class="ai-quick-btn" onclick="aiHizliAnaliz('Aktif görevleri analiz et ve öncelik sırasına göre özetle')">
+                <i class="ti ti-list-check"></i> Görev Özeti
+              </button>
+              <button class="ai-quick-btn" onclick="aiHizliAnaliz('Ekip iş yükü dağılımını analiz et, kim ne kadar meşgul?')">
+                <i class="ti ti-users"></i> Ekip İş Yükü
+              </button>
+              <button class="ai-quick-btn" onclick="aiHizliAnaliz('Geciken ve acil görevleri listele, ne yapılmalı?')">
+                <i class="ti ti-alert-triangle"></i> Acil & Geciken
+              </button>
+              <button class="ai-quick-btn" onclick="aiHizliAnaliz('Bu haftanın verimliliğini değerlendir ve öneriler sun')">
+                <i class="ti ti-chart-bar"></i> Verimlilik Raporu
+              </button>
+              <button class="ai-quick-btn" onclick="aiHizliAnaliz('Tüm görevleri gözden geçir, tamamlanma tahmini ver')">
+                <i class="ti ti-clock"></i> Tamamlanma Tahmini
+              </button>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title">📊 Model Bilgisi</div>
+            </div>
+            <div style="padding:14px 16px; display:flex; flex-direction:column; gap:10px; font-size:13px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:var(--text3)">Model</span>
+                <span style="font-weight:600;color:#60a5fa">Gemini 2.5 Flash</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:var(--text3)">Durum</span>
+                <span class="badge badge-green" style="font-size:11px;">Aktif</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:var(--text3)">Bu oturumda</span>
+                <span id="ai-msg-count" style="font-weight:600;">0 mesaj</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AYARLAR PAGE -->
+    <div class="page" id="page-ayarlar">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+        <!-- API KEY YÖNETİMİ -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">🔑 API Key Yönetimi</div>
+          </div>
+          <div style="padding:20px 22px; display:flex; flex-direction:column; gap:16px;">
+            <div>
+              <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">GEMINI API KEY</label>
+              <div style="display:flex;gap:8px;">
+                <input id="ayar-gemini-key" type="password" placeholder="AIza…"
+                  style="flex:1;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Courier New',monospace;font-size:12px;outline:none;" />
+                <button onclick="ayarKaydet('gemini')" class="btn-primary" style="padding:9px 14px;font-size:12px;">Kaydet</button>
+              </div>
+              <div id="ayar-gemini-status" style="font-size:11px;color:var(--text3);margin-top:6px;">
+                ${localStorage.getItem('gemini_api_key') ? '✓ Key kayıtlı' : 'Henüz girilmedi'}
+              </div>
+            </div>
+            <div style="height:0.5px;background:var(--border);"></div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">N8N WEBHOOK URL</label>
+              <div style="display:flex;gap:8px;">
+                <input id="ayar-n8n-url" type="text" placeholder="https://your-n8n.com/webhook/..."
+                  style="flex:1;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:12px;outline:none;" />
+                <button onclick="ayarKaydet('n8n')" class="btn-primary" style="padding:9px 14px;font-size:12px;">Kaydet</button>
+              </div>
+              <div id="ayar-n8n-status" style="font-size:11px;color:var(--text3);margin-top:6px;">
+                ${localStorage.getItem('n8n_webhook_url') ? '✓ URL kayıtlı' : 'Henüz girilmedi'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EKİP ÜYELERİ -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">👥 Ekip Üyeleri</div>
+            <button onclick="yeniUyeEkle()" class="btn-primary" style="padding:7px 14px;font-size:12px;"><i class="ti ti-plus" style="font-size:13px;"></i> Ekle</button>
+          </div>
+          <div style="padding:16px 22px;">
+            <div id="ayar-ekip-listesi" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- BİLDİRİM AYARLARI -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">🔔 Bildirim Ayarları</div>
+          </div>
+          <div style="padding:20px 22px; display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:13px;font-weight:500;">Telegram Bildirimleri</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px;">Yeni görev eklenince bildirim gönder</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-telegram" checked onchange="ayarToggle('notif_telegram', this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div style="height:0.5px;background:var(--border);"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:13px;font-weight:500;">Deadline Uyarıları</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px;">2 gün kala otomatik hatırlat</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-deadline" checked onchange="ayarToggle('notif_deadline', this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div style="height:0.5px;background:var(--border);"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:13px;font-weight:500;">Günlük Özet Maili</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px;">Her sabah 09:00'da özet gönder</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-ozet" onchange="ayarToggle('notif_ozet', this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- N8N DURUM -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">⚙️ n8n Bağlantı Durumu</div>
+          </div>
+          <div style="padding:16px 22px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border2);">
+              <div style="width:32px;height:32px;border-radius:8px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:16px;"><i class="ti ti-clock"></i></div>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Email Tarayıcı</div><div style="font-size:11px;color:var(--text3);">Her 15 dakika</div></div>
+              <span class="badge badge-green" style="font-size:11px;">Aktif</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border2);">
+              <div style="width:32px;height:32px;border-radius:8px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;color:#60a5fa;font-size:16px;"><i class="ti ti-brand-telegram"></i></div>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Telegram Bot</div><div style="font-size:11px;color:var(--text3);">Sesli not & mesaj</div></div>
+              <span class="badge badge-green" style="font-size:11px;">Aktif</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border2);">
+              <div style="width:32px;height:32px;border-radius:8px;background:var(--purple-bg);display:flex;align-items:center;justify-content:center;color:var(--purple2);font-size:16px;"><i class="ti ti-sparkles"></i></div>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Gemini AI</div><div style="font-size:11px;color:var(--text3);">Analiz & sınıflandırma</div></div>
+              <span id="n8n-gemini-status" class="badge badge-amber" style="font-size:11px;">Key Yok</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GMAIL PAGE -->
+    <div class="page" id="page-gmail">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">Gmail Tarama — n8n Workflow</div>
+        </div>
+        <div style="padding:24px">
+          <div style="display:flex; align-items:center; gap:12px; padding:16px; background:var(--bg3); border-radius:var(--radius); margin-bottom:12px; border:0.5px solid var(--border2)">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:18px"><i class="ti ti-clock"></i></div>
+            <div>
+              <div style="font-size:13px;font-weight:600">Tetikleyici: Her 15 dakika</div>
+              <div style="font-size:12px;color:var(--text3)">Son çalışma: 3 dakika önce</div>
+            </div>
+            <span class="badge badge-green" style="margin-left:auto">Aktif</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; padding:16px; background:var(--bg3); border-radius:var(--radius); margin-bottom:12px; border:0.5px solid var(--border2)">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;color:#60a5fa;font-size:18px"><i class="ti ti-mail"></i></div>
+            <div>
+              <div style="font-size:13px;font-weight:600">Gmail entegrasyonu</div>
+              <div style="font-size:12px;color:var(--text3)">247 email işlendi</div>
+            </div>
+            <span class="badge badge-green" style="margin-left:auto">Bağlı</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; padding:16px; background:var(--bg3); border-radius:var(--radius); border:0.5px solid var(--border2)">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--purple-bg);display:flex;align-items:center;justify-content:center;color:var(--purple2);font-size:18px"><i class="ti ti-sparkles"></i></div>
+            <div>
+              <div style="font-size:13px;font-weight:600">Gemini AI analizi</div>
+              <div style="font-size:12px;color:var(--text3)">Ortalama skor: 0.87</div>
+            </div>
+            <span class="badge badge-green" style="margin-left:auto">Çalışıyor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OTHER PAGES -->
+    <div class="page" id="page-gorevler">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Toplam Görev</div>
+          <div class="stat-dot" style="background: var(--purple)"></div>
+          <div class="stat-num" style="color: var(--purple2)" id="g-stat-toplam">—</div>
+          <div class="stat-sub">Tüm zamanlar</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tamamlanan</div>
+          <div class="stat-dot" style="background: var(--green)"></div>
+          <div class="stat-num" style="color: var(--green)" id="g-stat-tamamlanan">—</div>
+          <div class="stat-sub" id="g-stat-tamamlanan-sub">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bekleyen</div>
+          <div class="stat-dot" style="background: var(--amber)"></div>
+          <div class="stat-num" style="color: var(--amber)" id="g-stat-bekleyen">—</div>
+          <div class="stat-sub" id="g-stat-bekleyen-sub">Tamamlanmayan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Yüksek Öncelik</div>
+          <div class="stat-dot" style="background: var(--red)"></div>
+          <div class="stat-num" style="color: var(--red)" id="g-stat-yuksek">—</div>
+          <div class="stat-sub">Acil görev</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">Tüm Görevler</div>
+          <div class="section-filters">
+            <select class="filter-select" id="filter-durum" onchange="gorevleriFiltrele()"><option value="">Tüm Durumlar</option><option value="planlandı">Planlandı</option><option value="devam ediyor">Devam ediyor</option><option value="bekliyor">Bekliyor</option><option value="tamamlandı">Tamamlandı</option></select>
+            <select class="filter-select" id="filter-oncelik" onchange="gorevleriFiltrele()"><option value="">Tüm Öncelikler</option><option value="yüksek">Yüksek</option><option value="orta">Orta</option><option value="düşük">Düşük</option></select>
+            <select class="filter-select" id="filter-kisi" onchange="gorevleriFiltrele()"><option value="">Tüm Üyeler</option><option value="A">Ali</option><option value="Z">Zeynep</option><option value="M">Mehmet</option></select>
+          </div>
+        </div>
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>Görev</th>
+              <th>Sorumlu</th>
+              <th>Deadline</th>
+              <th>Durum</th>
+              <th>Öncelik</th>
+              <th>Kaynak</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="gorevler-tbody">
+            <tr>
+              <td>
+                <div class="task-name">Müşteri toplantısı</div>
+                <div class="task-source">Telegram → Bugün</div>
+              </td>
+              <td><div class="avatar av-zy" style="width:30px;height:30px;font-size:11px">ZY</div></td>
+              <td><span class="deadline-red">✕ 366 gün geçti</span></td>
+              <td><span class="badge badge-blue">Planlandı</span></td>
+              <td><span class="badge badge-amber">Orta</span></td>
+              <td><span class="source-chip"><i class="ti ti-brand-telegram"></i> TG</span></td>
+              <td><button class="check-btn"><i class="ti ti-check"></i></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="task-name">Landing page tasarımı</div>
+                <div class="task-source">Gmail → Bugün</div>
+              </td>
+              <td><div class="avatar av-al" style="width:30px;height:30px;font-size:11px">AL</div></td>
+              <td><span class="deadline-red">✕ 367 gün geçti</span></td>
+              <td><span class="badge badge-purple">Devam ediyor</span></td>
+              <td><span class="badge badge-red">Yüksek</span></td>
+              <td><span class="source-chip"><i class="ti ti-mail"></i> Gmail</span></td>
+              <td><button class="check-btn"><i class="ti ti-check"></i></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="task-name">Teklif belgesi gönder</div>
+                <div class="task-source">Gmail → Bugün</div>
+              </td>
+              <td><div class="avatar" style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff">ME</div></td>
+              <td><span class="deadline-red">✕ 365 gün geçti</span></td>
+              <td><span class="badge badge-amber">Bekliyor</span></td>
+              <td><span class="badge badge-red">Yüksek</span></td>
+              <td><span class="source-chip"><i class="ti ti-mail"></i> Gmail</span></td>
+              <td><button class="check-btn"><i class="ti ti-check"></i></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="task-name">Sosyal medya içerikleri</div>
+                <div class="task-source">Telegram → Dün</div>
+              </td>
+              <td><div class="avatar av-zy" style="width:30px;height:30px;font-size:11px">ZY</div></td>
+              <td><span style="font-family:'Courier New',monospace;font-size:12px;color:var(--amber);font-weight:600">⚠ 2 gün kaldı</span></td>
+              <td><span class="badge badge-purple">Devam ediyor</span></td>
+              <td><span class="badge badge-amber">Orta</span></td>
+              <td><span class="source-chip"><i class="ti ti-brand-telegram"></i> TG</span></td>
+              <td><button class="check-btn"><i class="ti ti-check"></i></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="task-name">Rakip analizi raporu</div>
+                <div class="task-source">Gmail → 3 gün önce</div>
+              </td>
+              <td><div class="avatar av-al" style="width:30px;height:30px;font-size:11px">AL</div></td>
+              <td><span style="font-family:'Courier New',monospace;font-size:12px;color:var(--green);font-weight:600">✓ 5 gün kaldı</span></td>
+              <td><span class="badge badge-blue">Planlandı</span></td>
+              <td><span class="badge badge-blue">Düşük</span></td>
+              <td><span class="source-chip"><i class="ti ti-mail"></i> Gmail</span></td>
+              <td><button class="check-btn"><i class="ti ti-check"></i></button></td>
+            </tr>
+            <tr style="opacity:0.5">
+              <td>
+                <div class="task-name" style="text-decoration:line-through">Haftalık rapor hazırla</div>
+                <div class="task-source">Gmail → 5 gün önce</div>
+              </td>
+              <td><div class="avatar" style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff">ME</div></td>
+              <td><span style="font-family:'Courier New',monospace;font-size:12px;color:var(--green);font-weight:600">✓ Tamamlandı</span></td>
+              <td><span class="badge badge-green">Tamamlandı</span></td>
+              <td><span class="badge badge-amber">Orta</span></td>
+              <td><span class="source-chip"><i class="ti ti-mail"></i> Gmail</span></td>
+              <td><button class="check-btn" style="background:var(--green-bg);color:var(--green);border-color:var(--green)"><i class="ti ti-check"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="page" id="page-ekip">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Toplam Üye</div>
+          <div class="stat-dot" style="background: var(--purple)"></div>
+          <div class="stat-num" style="color: var(--purple2)">3</div>
+          <div class="stat-sub">Aktif ekip</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aktif Görev</div>
+          <div class="stat-dot" style="background: var(--amber)"></div>
+          <div class="stat-num" style="color: var(--amber)">5</div>
+          <div class="stat-sub">Dağıtılmış</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tamamlanan</div>
+          <div class="stat-dot" style="background: var(--green)"></div>
+          <div class="stat-num" style="color: var(--green)">1</div>
+          <div class="stat-sub">Bu hafta</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Verimlilik</div>
+          <div class="stat-dot" style="background: var(--blue)"></div>
+          <div class="stat-num" style="color: var(--blue)">72<span style="font-size:18px">%</span></div>
+          <div class="stat-sub">Ortalama</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px;">
+
+        <div class="section-card" style="overflow:visible;">
+          <div style="padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:12px; border-bottom:0.5px solid var(--border);">
+            <div class="avatar av-al" style="width:64px;height:64px;font-size:22px;">AL</div>
+            <div style="text-align:center;">
+              <div style="font-size:16px;font-weight:600;">Ali</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:3px;">Proje Yöneticisi</div>
+            </div>
+            <span class="badge badge-green">Aktif</span>
+          </div>
+          <div style="padding:16px 24px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Atanan görev</span><span style="font-weight:600;">2</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Tamamlanan</span><span style="font-weight:600;color:var(--green)">0</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Geciken</span><span style="font-weight:600;color:var(--red)">1</span></div>
+            <div style="height:4px;background:var(--bg4);border-radius:4px;margin-top:4px;"><div style="height:100%;width:60%;background:var(--purple);border-radius:4px;"></div></div>
+            <div style="font-size:11px;color:var(--text3);">%60 verimlilik</div>
+          </div>
+        </div>
+
+        <div class="section-card" style="overflow:visible;">
+          <div style="padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:12px; border-bottom:0.5px solid var(--border);">
+            <div class="avatar av-zy" style="width:64px;height:64px;font-size:22px;">ZY</div>
+            <div style="text-align:center;">
+              <div style="font-size:16px;font-weight:600;">Zeynep</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:3px;">Tasarım & İçerik</div>
+            </div>
+            <span class="badge badge-green">Aktif</span>
+          </div>
+          <div style="padding:16px 24px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Atanan görev</span><span style="font-weight:600;">2</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Tamamlanan</span><span style="font-weight:600;color:var(--green)">0</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Geciken</span><span style="font-weight:600;color:var(--red)">1</span></div>
+            <div style="height:4px;background:var(--bg4);border-radius:4px;margin-top:4px;"><div style="height:100%;width:75%;background:var(--blue);border-radius:4px;"></div></div>
+            <div style="font-size:11px;color:var(--text3);">%75 verimlilik</div>
+          </div>
+        </div>
+
+        <div class="section-card" style="overflow:visible;">
+          <div style="padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:12px; border-bottom:0.5px solid var(--border);">
+            <div class="avatar" style="width:64px;height:64px;font-size:22px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;">ME</div>
+            <div style="text-align:center;">
+              <div style="font-size:16px;font-weight:600;">Mehmet</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:3px;">Geliştirici</div>
+            </div>
+            <span class="badge badge-green">Aktif</span>
+          </div>
+          <div style="padding:16px 24px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Atanan görev</span><span style="font-weight:600;">2</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Tamamlanan</span><span style="font-weight:600;color:var(--green)">1</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text3)">Geciken</span><span style="font-weight:600;color:var(--red)">1</span></div>
+            <div style="height:4px;background:var(--bg4);border-radius:4px;margin-top:4px;"><div style="height:100%;width:82%;background:var(--green);border-radius:4px;"></div></div>
+            <div style="font-size:11px;color:var(--text3);">%82 verimlilik</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- YENİ GÖREV MODAL -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-lg);width:480px;max-width:90vw;padding:28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+      <div style="font-size:16px;font-weight:600;">Yeni Görev Ekle</div>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">GÖREV ADI</label>
+        <input id="yeni-gorev-ad" type="text" placeholder="Görev adını girin…" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;outline:none;" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">SORUMLU</label>
+          <select id="yeni-gorev-sorumlu" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;">
+            <option value="AL">Ali</option>
+            <option value="ZY">Zeynep</option>
+            <option value="ME">Mehmet</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">ÖNCELİK</label>
+          <select id="yeni-gorev-oncelik" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;">
+            <option>Yüksek</option>
+            <option selected>Orta</option>
+            <option>Düşük</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">DEADLINE</label>
+          <input id="yeni-gorev-deadline" type="date" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px;">DURUM</label>
+          <select id="yeni-gorev-durum" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;">
+            <option>Planlandı</option>
+            <option>Devam ediyor</option>
+            <option>Bekliyor</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button onclick="gorevEkle()" style="flex:1;padding:10px;background:var(--purple);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+          <i class="ti ti-plus"></i> Görevi Ekle
+        </button>
+        <button onclick="closeModal()" style="padding:10px 20px;background:transparent;color:var(--text2);border:0.5px solid var(--border2);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">İptal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // SAYFA GEÇİŞİ
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const page = document.getElementById('page-' + name);
+    if (page) page.classList.add('active');
+    event.currentTarget.classList.add('active');
+    const titles = {
+      dashboard: 'Dashboard', gorevler: 'Görevler', takvim: 'Takvim',
+      tablolar: 'Tablolar', ekip: 'Ekip', 'yapay-zeka': 'Yapay Zeka', gmail: 'Gmail Tarama'
+    };
+    document.getElementById('page-title').textContent = titles[name] || name;
+  }
+
+  // TİK — GÖREVI TAMAMLA
+  function tamamla(btn) {
+    const row = btn.closest('tr');
+    row.style.opacity = '0.4';
+    row.style.transition = 'opacity 0.4s';
+    // Durum badge'ini güncelle (3. td = index 3)
+    const cells = row.querySelectorAll('td');
+    if (cells[3]) {
+      const badge = cells[3].querySelector('.badge');
+      if (badge) { badge.className = 'badge badge-green'; badge.textContent = 'Tamamlandı'; }
+    }
+    const taskName = row.querySelector('.task-name');
+    if (taskName) taskName.style.textDecoration = 'line-through';
+    btn.style.background = 'var(--green-bg)';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    btn.setAttribute('onclick', '');
+    btn.disabled = true;
+
+    // Hangi tbody'de olduğuna bak
+    const tbody = row.closest('tbody');
+    const tumSatirlar = tbody.querySelectorAll('tr');
+    const toplamSayi = tumSatirlar.length;
+    const tamamlananSayi = [...tumSatirlar].filter(tr => {
+      const b = tr.querySelectorAll('td')[3]?.querySelector('.badge');
+      return b && b.textContent.toLowerCase().includes('tamamland');
+    }).length;
+    const bekleyenSayi = toplamSayi - tamamlananSayi;
+
+    // Dashboard istatistikleri
+    if (document.getElementById('stat-tamamlanan')) {
+      document.getElementById('stat-tamamlanan').textContent = tamamlananSayi;
+      document.getElementById('stat-tamamlanan-sub').textContent = '%' + Math.round(tamamlananSayi/toplamSayi*100) + ' tamamlanma';
+      document.getElementById('stat-bekleyen').textContent = bekleyenSayi;
+      document.getElementById('stat-toplam').textContent = toplamSayi;
+      document.getElementById('stat-geciken').textContent = bekleyenSayi;
+    }
+    // Görevler sayfası istatistikleri
+    if (document.getElementById('g-stat-tamamlanan')) {
+      document.getElementById('g-stat-tamamlanan').textContent = tamamlananSayi;
+      document.getElementById('g-stat-tamamlanan-sub').textContent = '%' + Math.round(tamamlananSayi/toplamSayi*100) + ' tamamlanma';
+      document.getElementById('g-stat-bekleyen').textContent = bekleyenSayi;
+      document.getElementById('g-stat-toplam').textContent = toplamSayi;
+    }
+  }
+
+  // MODAL AÇ/KAPAT
+  function openModal() {
+    const overlay = document.getElementById('modal-overlay');
+    overlay.style.display = 'flex';
+  }
+  function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+  }
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // YENİ GÖREV EKLE
+  function gorevEkle() {
+    const ad = document.getElementById('yeni-gorev-ad').value.trim();
+    if (!ad) { alert('Görev adı boş olamaz!'); return; }
+    const sorumlu = document.getElementById('yeni-gorev-sorumlu').value;
+    const oncelik = document.getElementById('yeni-gorev-oncelik').value;
+    const deadline = document.getElementById('yeni-gorev-deadline').value;
+    const durum = document.getElementById('yeni-gorev-durum').value;
+
+    const oncelikClass = oncelik === 'Yüksek' ? 'badge-red' : oncelik === 'Orta' ? 'badge-amber' : 'badge-blue';
+    const durumClass = durum === 'Planlandı' ? 'badge-blue' : durum === 'Devam ediyor' ? 'badge-purple' : 'badge-amber';
+    const avatarColors = { AL: 'av-al', ZY: 'av-zy', ME: '' };
+    const avatarStyle = sorumlu === 'ME' ? 'style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff"' : `class="avatar ${avatarColors[sorumlu]}" style="width:30px;height:30px;font-size:11px"`;
+    const deadlineText = deadline ? new Date(deadline).toLocaleDateString('tr-TR') : '—';
+
+    const tbody = document.getElementById('dashboard-task-tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="task-name">${ad}</div><div class="task-source">Manuel → Bugün</div></td>
+      <td><div class="avatar ${avatarColors[sorumlu]}" style="width:30px;height:30px;font-size:11px${sorumlu==='ME'?';background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff':''}">${sorumlu}</div></td>
+      <td><span style="font-size:12px;color:var(--text2);">${deadlineText}</span></td>
+      <td><span class="badge ${durumClass}">${durum}</span></td>
+      <td><span class="badge ${oncelikClass}">${oncelik}</span></td>
+      <td><span class="source-chip"><i class="ti ti-plus"></i> Manuel</span></td>
+      <td><button class="check-btn" onclick="tamamla(this)"><i class="ti ti-check"></i></button></td>
+    `;
+    tbody.appendChild(tr);
+
+    // İstatistik güncelle
+    const toplam = tbody.querySelectorAll('tr').length;
+    document.getElementById('stat-toplam').textContent = toplam;
+    document.getElementById('stat-bekleyen').textContent = toplam - (tbody.querySelectorAll('.check-btn[disabled]').length);
+
+    closeModal();
+    document.getElementById('yeni-gorev-ad').value = '';
+  }
+
+  // HATİRLATMA MAİLİ
+  function mailGonder() {
+    const status = document.getElementById('mail-status');
+    status.style.display = 'inline-flex';
+    status.style.alignItems = 'center';
+    status.style.gap = '5px';
+    setTimeout(() => { status.style.display = 'none'; }, 3000);
+  }
+  function mailZamanla() {
+    alert('Zamanlama özelliği n8n workflow üzerinden aktif edilebilir.');
+  }
+
+  const CAL_BASE = 'https://calendar.google.com/calendar/embed?src=yapayzekahackathon26%40gmail.com&ctz=Europe%2FIstanbul&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&mode=MONTH';
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFzJvW2-in5AJQQS6Jv3wsg1UjEeO0IPHqfDEPM5BBUVnOhQd_5x3uxD7Mzagcki5rVW73S-FzoM4Q/pub?output=csv&nocache=';
+
+  // CSV'yi parse et
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    return lines.map(line => {
+      const result = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+        else { cur += c; }
+      }
+      result.push(cur.trim());
+      return result;
+    });
+  }
+
+  // Öncelik badge rengi
+  function oncelikClass(val) {
+    if (!val) return 'badge-blue';
+    const v = val.toLowerCase();
+    if (v.includes('yüksek') || v.includes('high')) return 'badge-red';
+    if (v.includes('orta') || v.includes('medium')) return 'badge-amber';
+    return 'badge-blue';
+  }
+
+  // Durum badge rengi
+  function durumClass(val) {
+    if (!val) return 'badge-blue';
+    const v = val.toLowerCase();
+    if (v.includes('tamamland') || v.includes('done') || v.includes('complete')) return 'badge-green';
+    if (v.includes('devam') || v.includes('progress')) return 'badge-purple';
+    if (v.includes('bekl') || v.includes('wait')) return 'badge-amber';
+    return 'badge-blue';
+  }
+
+  // Avatar HTML oluştur
+  function avatarHTML(kisi) {
+    if (!kisi) return '<div class="avatar" style="width:30px;height:30px;font-size:11px;background:var(--bg4);color:var(--text2)">?</div>';
+    const initials = kisi.trim().split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    const colors = {
+      'AL': 'background:linear-gradient(135deg,#7c5cfc,#a78bfa)',
+      'ZE': 'background:linear-gradient(135deg,#06b6d4,#3b82f6)',
+      'ME': 'background:linear-gradient(135deg,#f59e0b,#ef4444)',
+    };
+    const colorStyle = colors[initials] || 'background:linear-gradient(135deg,#22c55e,#06b6d4)';
+    return `<div class="avatar" style="width:30px;height:30px;font-size:11px;${colorStyle};color:#fff">${initials}</div>`;
+  }
+
+  // Kaynak ikonu
+  function kaynakIcon(kaynak) {
+    if (!kaynak) return '';
+    const k = kaynak.toLowerCase();
+    if (k.includes('telegram')) return '<i class="ti ti-brand-telegram"></i>';
+    if (k.includes('gmail') || k.includes('mail')) return '<i class="ti ti-mail"></i>';
+    return '<i class="ti ti-circle"></i>';
+  }
+
+  // Deadline rengi
+  function deadlineHTML(deadline) {
+    if (!deadline) return '—';
+    return `<span style="font-size:12px;color:var(--text2)">${deadline}</span>`;
+  }
+
+  // Sheets tablosunu ve dashboard'u güncelle
+  async function sheetsYukle() {
+    try {
+      const res = await fetch(CSV_URL + Date.now());
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (rows.length < 2) return;
+
+      // Geçerli satırları filtrele (boş olmayan)
+      const dataRows = rows.slice(1).filter(r => r.some(c => c !== ''));
+
+      // ── TABLOLAR sekmesi ──
+      const sheetsBody = document.getElementById('sheets-tbody');
+      sheetsBody.innerHTML = '';
+      dataRows.forEach(r => {
+        const [id, gorev, kisi, deadline, durum, oncelik, kaynak, tarih] = r;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-size:12px;color:var(--text3);font-family:'Courier New',monospace">${id||''}</td>
+          <td><div class="task-name">${gorev||'—'}</div></td>
+          <td><span style="font-size:13px;font-weight:500">${kisi||'—'}</span></td>
+          <td>${deadlineHTML(deadline)}</td>
+          <td>${durum ? `<span class="badge ${durumClass(durum)}">${durum}</span>` : '—'}</td>
+          <td>${oncelik ? `<span class="badge ${oncelikClass(oncelik)}">${oncelik}</span>` : '—'}</td>
+          <td><span class="source-chip">${kaynakIcon(kaynak)} ${kaynak||'—'}</span></td>
+          <td><span style="font-size:11px;color:var(--text3)">${tarih||'—'}</span></td>
+        `;
+        sheetsBody.appendChild(tr);
+      });
+
+      // ── DASHBOARD Aktif Görevler ──
+      const dashBody = document.getElementById('dashboard-task-tbody');
+      dashBody.innerHTML = '';
+      const aktifRows = dataRows.filter(r => {
+        const durum = (r[4]||'').toLowerCase();
+        return !durum.includes('tamamland') && !durum.includes('done');
+      });
+
+      if (aktifRows.length === 0) {
+        dashBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Aktif görev yok 🎉</td></tr>';
+      } else {
+        aktifRows.forEach(r => {
+          const [id, gorev, kisi, deadline, durum, oncelik, kaynak, tarih] = r;
+          if (!gorev) return;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>
+              <div class="task-name">${gorev}</div>
+              <div class="task-source">${kaynak||'Manuel'} → ${tarih||'Bugün'}</div>
+            </td>
+            <td>${avatarHTML(kisi)}</td>
+            <td>${deadlineHTML(deadline)}</td>
+            <td>${durum ? `<span class="badge ${durumClass(durum)}">${durum}</span>` : '—'}</td>
+            <td>${oncelik ? `<span class="badge ${oncelikClass(oncelik)}">${oncelik}</span>` : '—'}</td>
+            <td><span class="source-chip">${kaynakIcon(kaynak)} ${kaynak||'—'}</span></td>
+            <td><button class="check-btn" onclick="tamamla(this)"><i class="ti ti-check"></i></button></td>
+          `;
+          dashBody.appendChild(tr);
+        });
+      }
+
+      // ── İstatistikleri güncelle ──
+      const toplam = dataRows.filter(r => r.some(c=>c!=='')).length;
+      const tamamlanan = dataRows.filter(r => {
+        const d = (r[4]||'').toLowerCase();
+        return d.includes('tamamland') || d.includes('done');
+      }).length;
+      const bekleyen = toplam - tamamlanan;
+      document.getElementById('stat-toplam').textContent = toplam;
+      document.getElementById('stat-tamamlanan').textContent = tamamlanan;
+      document.getElementById('stat-tamamlanan-sub').textContent = '%' + (toplam ? Math.round(tamamlanan/toplam*100) : 0) + ' tamamlanma';
+      document.getElementById('stat-bekleyen').textContent = bekleyen;
+      document.getElementById('stat-geciken').textContent = bekleyen;
+
+      // ── GÖREVLER sayfası stat kartları ──
+      const yuksekSayiG = dataRows.filter(r => (r[5]||'').toLowerCase().includes('yüksek')).length;
+      document.getElementById('g-stat-toplam').textContent = toplam;
+      document.getElementById('g-stat-tamamlanan').textContent = tamamlanan;
+      document.getElementById('g-stat-tamamlanan-sub').textContent = '%' + (toplam ? Math.round(tamamlanan/toplam*100) : 0) + ' tamamlanma';
+      document.getElementById('g-stat-bekleyen').textContent = bekleyen;
+      document.getElementById('g-stat-yuksek').textContent = yuksekSayiG;
+
+      // ── GÖREVLER sekmesi (tüm görevler) ──
+      const gorevlerBody = document.getElementById('gorevler-tbody');
+      if (gorevlerBody) {
+        gorevlerBody.innerHTML = '';
+        if (dataRows.length === 0) {
+          gorevlerBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Henüz görev yok</td></tr>';
+        } else {
+          dataRows.forEach(r => {
+            const [id, gorev, kisi, deadline, durum, oncelik, kaynak, tarih] = r;
+            if (!gorev) return;
+            const tamamlandi = (durum||'').toLowerCase().includes('tamamland');
+            const tr = document.createElement('tr');
+            if (tamamlandi) tr.style.opacity = '0.5';
+            tr.innerHTML = `
+              <td>
+                <div class="task-name" ${tamamlandi ? 'style="text-decoration:line-through"' : ''}>${gorev}</div>
+                <div class="task-source">${kaynak||'Manuel'} → ${tarih||'Bugün'}</div>
+              </td>
+              <td>${avatarHTML(kisi)}</td>
+              <td>${deadlineHTML(deadline)}</td>
+              <td>${durum ? `<span class="badge ${durumClass(durum)}">${durum}</span>` : '—'}</td>
+              <td>${oncelik ? `<span class="badge ${oncelikClass(oncelik)}">${oncelik}</span>` : '—'}</td>
+              <td><span class="source-chip">${kaynakIcon(kaynak)} ${kaynak||'—'}</span></td>
+              <td><button class="check-btn" ${tamamlandi ? 'style="background:var(--green-bg);color:var(--green);border-color:var(--green)"' : 'onclick="tamamla(this)"'}><i class="ti ti-check"></i></button></td>
+            `;
+            gorevlerBody.appendChild(tr);
+          });
+        }
+      }
+
+      // ── GÜNLÜK BRİFİNG güncelle ──
+      const gunler = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+      const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+      const bugun = new Date();
+      const gunAdi = gunler[bugun.getDay()];
+      const tarihStr = bugun.getDate() + ' ' + aylar[bugun.getMonth()];
+      document.getElementById('brifing-title').textContent = 'Günlük Brifing — ' + gunAdi + ', ' + tarihStr;
+
+      const aktifSayi = aktifRows.filter(r => r.some(c => c !== '')).length;
+      const toplamSayi = dataRows.filter(r => r.some(c => c !== '')).length;
+      const tamamSayi = dataRows.filter(r => (r[4]||'').toLowerCase().includes('tamamland')).length;
+      const yuksekSayi = dataRows.filter(r => (r[5]||'').toLowerCase().includes('yüksek')).length;
+      const verimlilik = toplamSayi > 0 ? Math.round(tamamSayi / toplamSayi * 100) : 0;
+
+      // Geciken kişileri bul (durum "bekliyor" veya "planlandı" olanlar)
+      const gecikenKisiler = [...new Set(
+        dataRows.filter(r => {
+          const d = (r[4]||'').toLowerCase();
+          return d.includes('bekl') || d.includes('planland');
+        }).map(r => r[2]).filter(Boolean)
+      )];
+
+      let brifingHTML = '';
+      if (toplamSayi === 0) {
+        brifingHTML = 'Henüz görev yok. n8n üzerinden veri bekleniyor…';
+      } else {
+        brifingHTML += `Bugün <strong>${aktifSayi} aktif görev</strong> var. `;
+        if (gecikenKisiler.length > 0) {
+          brifingHTML += `<strong>${gecikenKisiler[0]}</strong>'${gecikenKisiler[0].endsWith('i')||gecikenKisiler[0].endsWith('ı')?'':'nin'} görevi bekliyor — dikkat! `;
+        }
+        if (yuksekSayi > 0) {
+          brifingHTML += `<span class="warn">${yuksekSayi} yüksek öncelikli</span> görev var. `;
+        }
+        brifingHTML += `Ekip verimliliği <span class="${verimlilik >= 50 ? 'ok' : 'warn'}">%${verimlilik}</span> seviyesinde.`;
+      }
+      document.getElementById('brifing-text').innerHTML = brifingHTML;
+
+      // Son güncelleme zamanı
+      const now = new Date();
+      document.getElementById('sheets-son-guncelleme').textContent =
+        'Son güncelleme: ' + now.toLocaleTimeString('tr-TR');
+    } catch(e) {
+      console.error(e);
+      document.getElementById('sheets-tbody').innerHTML =
+        '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--red)">Veri çekilemedi.</td></tr>';
+    }
+  }
+
+  // ── AYARLAR ──
+  function ayarlarYukle() {
+    const geminiKey = localStorage.getItem('gemini_api_key');
+    if (geminiKey) {
+      const el = document.getElementById('ayar-gemini-status');
+      if (el) el.innerHTML = '<span style="color:var(--green)">✓ Key kayıtlı</span>';
+      const statusEl = document.getElementById('n8n-gemini-status');
+      if (statusEl) { statusEl.textContent = 'Bağlı'; statusEl.className = 'badge badge-green'; statusEl.style.fontSize='11px'; }
+    }
+    const n8nUrl = localStorage.getItem('n8n_webhook_url');
+    if (n8nUrl) {
+      const el = document.getElementById('ayar-n8n-status');
+      if (el) el.innerHTML = '<span style="color:var(--green)">✓ URL kayıtlı</span>';
+      const inp = document.getElementById('ayar-n8n-url');
+      if (inp) inp.value = n8nUrl;
+    }
+    // Toggle durumları
+    ['notif_telegram','notif_deadline','notif_ozet'].forEach(k => {
+      const val = localStorage.getItem(k);
+      const map = {'notif_telegram':'notif-telegram','notif_deadline':'notif-deadline','notif_ozet':'notif-ozet'};
+      const el = document.getElementById(map[k]);
+      if (el && val !== null) el.checked = val === 'true';
+    });
+    ekipListesiniGoster();
+  }
+
+  function ayarKaydet(tip) {
+    if (tip === 'gemini') {
+      const key = document.getElementById('ayar-gemini-key').value.trim();
+      if (!key) return;
+      localStorage.setItem('gemini_api_key', key);
+      document.getElementById('ayar-gemini-key').value = '';
+      document.getElementById('ayar-gemini-status').innerHTML = '<span style="color:var(--green)">✓ Key kaydedildi</span>';
+      const statusEl = document.getElementById('n8n-gemini-status');
+      if (statusEl) { statusEl.textContent = 'Bağlı'; statusEl.className = 'badge badge-green'; statusEl.style.fontSize='11px'; }
+    } else if (tip === 'n8n') {
+      const url = document.getElementById('ayar-n8n-url').value.trim();
+      if (!url) return;
+      localStorage.setItem('n8n_webhook_url', url);
+      document.getElementById('ayar-n8n-status').innerHTML = '<span style="color:var(--green)">✓ URL kaydedildi</span>';
+    }
+  }
+
+  function ayarToggle(key, val) {
+    localStorage.setItem(key, val);
+  }
+
+  // Ekip üyeleri yönetimi
+  function ekipListesiniGoster() {
+    const liste = JSON.parse(localStorage.getItem('ekip_uyeleri') || '[]');
+    const varsayilan = [{ad:'Ali', rol:'Proje Yöneticisi', initials:'AL'}, {ad:'Zeynep', rol:'Tasarımcı', initials:'ZY'}, {ad:'Mehmet', rol:'Geliştirici', initials:'ME'}];
+    const tumListe = liste.length > 0 ? liste : varsayilan;
+    const el = document.getElementById('ayar-ekip-listesi');
+    if (!el) return;
+    el.innerHTML = tumListe.map((u, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--radius);border:0.5px solid var(--border2);">
+        <div class="avatar" style="width:34px;height:34px;font-size:12px;background:linear-gradient(135deg,#7c5cfc,#a78bfa);color:#fff;">${u.initials}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">${u.ad}</div>
+          <div style="font-size:11px;color:var(--text3);">${u.rol}</div>
+        </div>
+        <button onclick="uyeSil(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;"><i class="ti ti-trash"></i></button>
+      </div>
+    `).join('');
+  }
+
+  function yeniUyeEkle() {
+    const ad = prompt('Üye adı:');
+    if (!ad) return;
+    const rol = prompt('Rolü:') || 'Ekip Üyesi';
+    const initials = ad.slice(0,2).toUpperCase();
+    const liste = JSON.parse(localStorage.getItem('ekip_uyeleri') || '[]');
+    liste.push({ad, rol, initials});
+    localStorage.setItem('ekip_uyeleri', JSON.stringify(liste));
+    ekipListesiniGoster();
+  }
+
+  function uyeSil(i) {
+    const varsayilan = [{ad:'Ali', rol:'Proje Yöneticisi', initials:'AL'}, {ad:'Zeynep', rol:'Tasarımcı', initials:'ZY'}, {ad:'Mehmet', rol:'Geliştirici', initials:'ME'}];
+    const liste = JSON.parse(localStorage.getItem('ekip_uyeleri') || JSON.stringify(varsayilan));
+    liste.splice(i, 1);
+    localStorage.setItem('ekip_uyeleri', JSON.stringify(liste));
+    ekipListesiniGoster();
+  }
+
+  // ── DASHBOARD FİLTRELEME ──
+  function dashFiltrele() {
+    const durum = document.getElementById('dash-filter-durum').value.toLowerCase();
+    const oncelik = document.getElementById('dash-filter-oncelik').value.toLowerCase();
+    const kisi = document.getElementById('dash-filter-kisi').value;
+
+    const tbody = document.getElementById('dashboard-task-tbody');
+    if (!tbody) return;
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      if (cells.length < 5) { tr.style.display = ''; return; }
+      const avatarEl = cells[1].querySelector('.avatar');
+      const durumBadge = cells[3].querySelector('.badge');
+      const oncelikBadge = cells[4].querySelector('.badge');
+      const rowDurum = durumBadge ? durumBadge.textContent.trim().toLowerCase() : '';
+      const rowOncelik = oncelikBadge ? oncelikBadge.textContent.trim().toLowerCase() : '';
+      const rowKisiInitial = avatarEl ? avatarEl.textContent.trim().charAt(0).toUpperCase() : '';
+      const durumMatch = !durum || rowDurum.includes(durum);
+      const oncelikMatch = !oncelik || rowOncelik.includes(oncelik);
+      const kisiMatch = !kisi || rowKisiInitial === kisi;
+      tr.style.display = (durumMatch && oncelikMatch && kisiMatch) ? '' : 'none';
+    });
+  }
+
+  // ── GÖREV FİLTRELEME ──
+  function gorevleriFiltrele() {
+    const durum = document.getElementById('filter-durum').value.toLowerCase();
+    const oncelik = document.getElementById('filter-oncelik').value.toLowerCase();
+    const kisi = document.getElementById('filter-kisi').value; // "A", "Z", "M" veya ""
+
+    const tbody = document.getElementById('gorevler-tbody');
+    if (!tbody) return;
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      if (cells.length < 5) { tr.style.display = ''; return; }
+
+      // TD sırası: 0=görev, 1=sorumlu, 2=deadline, 3=durum, 4=öncelik
+      const avatarEl = cells[1].querySelector('.avatar');
+      const durumBadge = cells[3].querySelector('.badge');
+      const oncelikBadge = cells[4].querySelector('.badge');
+
+      const rowDurum = durumBadge ? durumBadge.textContent.trim().toLowerCase() : '';
+      const rowOncelik = oncelikBadge ? oncelikBadge.textContent.trim().toLowerCase() : '';
+      const rowKisiInitial = avatarEl ? avatarEl.textContent.trim().charAt(0).toUpperCase() : '';
+
+      const durumMatch = !durum || rowDurum.includes(durum);
+      const oncelikMatch = !oncelik || rowOncelik.includes(oncelik);
+      const kisiMatch = !kisi || rowKisiInitial === kisi;
+
+      tr.style.display = (durumMatch && oncelikMatch && kisiMatch) ? '' : 'none';
+    });
+  }
+
+  // ── AI CHAT (Gemini) ──
+  let aiMsgCount = 0;
+  let aiChatHistory = [];
+
+  function gorevVerisiniAl() {
+    const tbody = document.getElementById('gorevler-tbody');
+    if (!tbody) return 'Görev verisi bulunamadı.';
+    const rows = tbody.querySelectorAll('tr');
+    let gorevler = [];
+    rows.forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      if (cells.length < 4) return;
+      const gorev = cells[0]?.querySelector('.task-name')?.textContent?.trim();
+      const kisi = cells[1]?.querySelector('.avatar')?.textContent?.trim();
+      const deadline = cells[2]?.textContent?.trim();
+      const durum = cells[3]?.querySelector('.badge')?.textContent?.trim();
+      const oncelik = cells[4]?.querySelector('.badge')?.textContent?.trim();
+      if (gorev) gorevler.push(`- ${gorev} | Sorumlu: ${kisi||'?'} | Deadline: ${deadline||'?'} | Durum: ${durum||'?'} | Öncelik: ${oncelik||'?'}`);
+    });
+    return gorevler.length > 0 ? gorevler.join('\n') : 'Henüz görev yok.';
+  }
+
+  function aiMesajEkle(text, tip) {
+    const box = document.getElementById('ai-chat-messages');
+    const div = document.createElement('div');
+    div.className = 'ai-msg ai-msg-' + tip;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+
+  async function aiChatGonder() {
+    const input = document.getElementById('ai-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    aiMesajEkle(text, 'user');
+    aiChatHistory.push({ role: 'user', parts: [{text}] });
+    await aiYanıtAl();
+  }
+
+  async function aiHizliAnaliz(prompt) {
+    aiMesajEkle(prompt, 'user');
+    aiChatHistory.push({ role: 'user', parts: [{text: prompt}] });
+    await aiYanıtAl();
+  }
+
+  async function aiYanıtAl() {
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+      aiMesajEkle('⚠️ Gemini API key bulunamadı. Lütfen Ayarlar sayfasından key girin.', 'bot');
+      return;
+    }
+    const thinkingDiv = aiMesajEkle('Düşünüyor…', 'thinking');
+    const gorevler = gorevVerisiniAl();
+    const systemPrompt = `Sen Ekip Hafızası adlı proje yönetim asistanısın. Türkçe konuşuyorsun. Ekibin mevcut görevleri:\n\n${gorevler}\n\nKısa, net ve faydalı yanıtlar ver.`;
+
+    try {
+      const contents = [
+        { role: 'user', parts: [{text: systemPrompt}] },
+        { role: 'model', parts: [{text: 'Anladım, yardımcı olmaya hazırım.'}] },
+        ...aiChatHistory
+      ];
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents })
+        }
+      );
+      const data = await response.json();
+      if (data.error) throw new Error(data.error.message);
+      const yanit = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Yanıt alınamadı.';
+      thinkingDiv.remove();
+      aiMesajEkle(yanit, 'bot');
+      aiChatHistory.push({ role: 'model', parts: [{text: yanit}] });
+      aiMsgCount++;
+      document.getElementById('ai-msg-count').textContent = aiMsgCount + ' mesaj';
+    } catch(e) {
+      thinkingDiv.remove();
+      aiMesajEkle('Hata: ' + e.message, 'bot');
+    }
+  }
+
+
+  sheetsYukle();
+  ayarlarYukle();
+  setInterval(sheetsYukle, 30000);
+
+  // Tablolar sekmesine tıklanda yenile
+  document.querySelector('[onclick="showPage(\'tablolar\')"]').addEventListener('click', sheetsYukle);
+
+  function freshCalSrc() {
+    return CAL_BASE + '&nocache=' + Date.now();
+  }
+
+  function reloadCalendar() {
+    const f = document.getElementById('calendar-iframe');
+    if (f) { f.src = ''; setTimeout(() => { f.src = freshCalSrc(); }, 80); }
+  }
+
+  function reloadSheets() { sheetsYukle(); }
+
+  // Takvim sekmesine tıklandığında taze yükle
+  document.querySelector('[onclick="showPage(\'takvim\')"]').addEventListener('click', reloadCalendar);
+
+  // Takvimi 5 dakikada bir otomatik yenile
+  setInterval(reloadCalendar, 5 * 60 * 1000);
+
+  // Yenile butonu
+  document.querySelector('.btn-outline').addEventListener('click', function() {
+    const activePage = document.querySelector('.page.active');
+    if (activePage && activePage.id === 'page-takvim') reloadCalendar();
+    else if (activePage && activePage.id === 'page-tablolar') sheetsYukle();
+    this.innerHTML = '<i class="ti ti-check" style="font-size:15px"></i> Güncellendi';
+    setTimeout(() => { this.innerHTML = '<i class="ti ti-refresh" style="font-size:15px"></i> Yenile'; }, 2000);
+  });
+
+  // Yeni Görev butonu
+  document.querySelector('.btn-primary').addEventListener('click', openModal);
+</script>
+</body>
+</html>
