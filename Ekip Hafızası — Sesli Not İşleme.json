@@ -1,0 +1,542 @@
+{
+  "name": "Ekip Hafızası — Sesli Not İşleme",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1856,
+        480
+      ],
+      "webhookId": "ekip-hafizasi-sesli-not",
+      "id": "2879cc15-bae6-4428-a911-29cec3a707de",
+      "credentials": {
+        "telegramApi": {
+          "id": "HZdh79lLttX49P0i",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.message.voice ? 'var' : '' }}",
+              "value2": "var"
+            }
+          ]
+        }
+      },
+      "name": "Sesli Mesaj Mı?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1632,
+        480
+      ],
+      "id": "82adc8c1-0925-46df-ab55-0e2befbfc3eb"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot8728098144:AAGyIruTbzEqMo64dYTQFhPZ-b3kLGoKs2I/getFile?file_id={{ $json.message.voice.file_id }}",
+        "options": {}
+      },
+      "name": "Dosya Yolunu Al",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -1408,
+        384
+      ],
+      "id": "8d0c19c7-b745-430d-b42f-d2eac4d30aa3"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/file/bot8728098144:AAGyIruTbzEqMo64dYTQFhPZ-b3kLGoKs2I/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "name": "Ses Dosyasını İndir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -1200,
+        384
+      ],
+      "id": "9a3b399c-42eb-4e55-8ac4-f9fb18b9b49c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyDn6Sd3A9uQdQwQLiruDqL5Gv2G4h7oi6E"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"inline_data\": {\n            \"mime_type\": \"audio/ogg\",\n            \"data\": \"{{ $binary.data.data }}\"\n          }\n        },\n        {\n          \"text\": \"Bu ses kaydını Türkçe metne çevir ve içinden görevleri, sorumlu kişileri, deadline'ları ve öncelik seviyelerini çıkar. Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:\\n{\\n  \\\"transkript\\\": \\\"sesin tam metni\\\",\\n  \\\"gorevler\\\": [\\n    {\\n      \\\"gorev\\\": \\\"görev adı\\\",\\n      \\\"kisi\\\": \\\"sorumlu kişi veya Belirsiz\\\",\\n      \\\"oncelik\\\": \\\"Yüksek veya Orta veya Düşük\\\",\\n      \\\"deadline\\\": \\\"GG.AA.YYYY formatında veya Belirsiz\\\",\\n      \\\"durum\\\": \\\"Bekliyor\\\"\\n    }\\n  ]\\n}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "name": "Gemini — Ses Analizi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -976,
+        384
+      ],
+      "id": "b9fdaecb-71fd-45e7-abfc-3314601317f6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\n\n// JSON bloğunu temizle\nconst cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch(e) {\n  return [{ json: { hata: 'JSON parse edilemedi', ham: raw } }];\n}\n\nconst gorevler = parsed.gorevler || [];\nconst transkript = parsed.transkript || '';\n\nif (gorevler.length === 0) {\n  return [{ json: { gorev_yok: true, transkript } }];\n}\n\nreturn gorevler.map(g => ({\n  json: {\n    gorev: g.gorev || '',\n    kisi: g.kisi || 'Belirsiz',\n    oncelik: g.oncelik || 'Orta',\n    deadline: g.deadline || 'Belirsiz',\n    durum: 'Bekliyor',\n    kaynak: 'Telegram Sesli Not',\n    transkript,\n    tarih: new Date().toLocaleDateString('tr-TR')\n  }\n}));"
+      },
+      "name": "Görevleri Ayrıştır",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        384
+      ],
+      "id": "433dfbcb-11e1-447f-9c29-54a1276033cf"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.gorev_yok }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Görev Var Mı?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        384
+      ],
+      "id": "a072837f-78e8-410c-ad59-fc4ce25ad7fb"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.deadline }}",
+              "operation": "notEqual",
+              "value2": "Belirsiz"
+            }
+          ]
+        }
+      },
+      "name": "Deadline Var Mı?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        304
+      ],
+      "id": "fbbc9c89-68ca-4654-9c4b-847eb56ac142"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "name",
+          "value": "primary"
+        },
+        "start": "={{ $json.deadline }}",
+        "end": "={{ $json.deadline }}",
+        "additionalFields": {
+          "description": "=Sorumlu: {{ $json.kisi }}\nÖncelik: {{ $json.oncelik }}\nKaynak: Telegram Sesli Not\n\nTranskript:\n{{ $json.transkript }}",
+          "summary": "=📌 {{ $json.gorev }}"
+        }
+      },
+      "name": "Calendar — Deadline Ekle",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        128,
+        240
+      ],
+      "id": "3a0081c5-4a4f-4d02-aa27-becc57d9f581",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ACkb7FdrPiZGzrnh",
+          "name": "Google Calendar OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst gorevListesi = items.map((item, i) => {\n  const g = item.json;\n  const deadlineText = g.deadline !== 'Belirsiz' ? `📅 ${g.deadline}` : '📅 Deadline yok';\n  const oncelikEmoji = g.oncelik === 'Yüksek' ? '🔴' : g.oncelik === 'Orta' ? '🟡' : '🟢';\n  return `${i+1}. ${oncelikEmoji} *${g.gorev}*\\n   👤 ${g.kisi} | ${deadlineText}`;\n}).join('\\n\\n');\n\nconst transkript = items[0]?.json?.transkript || '';\nconst transkriptKisa = transkript.length > 200 ? transkript.substring(0, 200) + '...' : transkript;\n\nreturn [{\n  json: {\n    mesaj: `🎙️ *Sesli Not İşlendi!*\\n\\n📝 *Transkript:*\\n_${transkriptKisa}_\\n\\n✅ *Tespit Edilen Görevler (${items.length}):*\\n\\n${gorevListesi}\\n\\n_Görevler Sheets ve Takvime kaydedildi._`\n  }\n}];"
+      },
+      "name": "Bildirim Metni Hazırla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        304
+      ],
+      "id": "5eebe64e-4e53-40c4-9c41-efaea0af928e"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $json.mesaj }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "name": "Telegram — Özet Gönder",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        576,
+        304
+      ],
+      "id": "9be64f0e-9118-41fa-88a7-dade0663cbe6",
+      "webhookId": "a5726beb-1f04-48e9-b569-c6d7a1cf1676",
+      "credentials": {
+        "telegramApi": {
+          "id": "HZdh79lLttX49P0i",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "🎙️ Sesli notu dinledim ama içinde herhangi bir görev tespit edemedim.\n\nBiraz daha net anlatmayı dener misin? Örnek: _\"Ali'nin pazartesiye kadar raporu bitirmesi lazım\"_",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "name": "Telegram — Görev Yok Mesajı",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        512
+      ],
+      "id": "e49142e6-5cab-433f-abad-5ad1a42d8266",
+      "webhookId": "eade5acc-0a58-4315-85b1-2107936f3bb5",
+      "credentials": {
+        "telegramApi": {
+          "id": "HZdh79lLttX49P0i",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Görevler",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JezAeiM3RdMOxdyflEkvillcM-Ybc7BRSFXgIz9128Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Görev": "={{ $json.kisi || '-' }}",
+            "Kişi ": "={{ $json.kisi || '-' }}",
+            "Durum": "={{ ' ' + ($json.durum === 'Planlandı' ? 'Planlandı' : $json.durum === 'Devam ediyor' ? 'Devam ediyor' : 'Bekliyor') }}",
+            "Tarih": "={{ $now.toFormat('dd.MM.yyyy') }}",
+            "Deadline": "={{ $json.deadline || '-' }}",
+            "Kaynak": "={{ $json.kaynak || '-' }}",
+            "Öncelik": "={{ $json.oncelik || '_' }}",
+            "ID": "={{ $json.id || $now.toMillis() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Görev",
+              "displayName": "Görev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Kişi ",
+              "displayName": "Kişi ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Deadline",
+              "displayName": "Deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Durum",
+              "displayName": "Durum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Öncelik",
+              "displayName": "Öncelik",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Kaynak",
+              "displayName": "Kaynak",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tarih",
+              "displayName": "Tarih",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Save to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -336,
+        320
+      ],
+      "id": "946979a5-489f-4fa2-8fc8-1b4110be49f6",
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aRTQT9CeuQsymCT5",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sesli Mesaj Mı?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sesli Mesaj Mı?": {
+      "main": [
+        [
+          {
+            "node": "Dosya Yolunu Al",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dosya Yolunu Al": {
+      "main": [
+        [
+          {
+            "node": "Ses Dosyasını İndir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ses Dosyasını İndir": {
+      "main": [
+        [
+          {
+            "node": "Gemini — Ses Analizi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini — Ses Analizi": {
+      "main": [
+        [
+          {
+            "node": "Görevleri Ayrıştır",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Görevleri Ayrıştır": {
+      "main": [
+        [
+          {
+            "node": "Görev Var Mı?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Görev Var Mı?": {
+      "main": [
+        [
+          {
+            "node": "Save to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram — Görev Yok Mesajı",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deadline Var Mı?": {
+      "main": [
+        [
+          {
+            "node": "Calendar — Deadline Ekle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Bildirim Metni Hazırla",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar — Deadline Ekle": {
+      "main": [
+        [
+          {
+            "node": "Bildirim Metni Hazırla",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bildirim Metni Hazırla": {
+      "main": [
+        [
+          {
+            "node": "Telegram — Özet Gönder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Deadline Var Mı?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "045d3b70-5f7a-47f8-ab2e-f6bdd9866772",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7aae2b55c5ab9e74ad72f1bb95f17c921714db225674373b8a63eb658e945f04"
+  },
+  "id": "2g3IKGqKHZKpNQ5x",
+  "tags": []
+}
